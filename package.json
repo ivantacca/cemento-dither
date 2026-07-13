@@ -1,0 +1,48 @@
+{
+  "name": "cemento-dither",
+  "version": "0.1.0",
+  "description": "Dithering, synthetization and ascii art video effects, powered by ffmpeg-wasm",
+  "type": "module",
+  "license": "MIT",
+  "main": "dist/index.cjs",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "prepare": "npm run build",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "peerDependencies": {
+    "@ffmpeg/ffmpeg": ">=0.12.0 <1.0.0",
+    "@ffmpeg/util": ">=0.12.0 <1.0.0"
+  },
+  "devDependencies": {
+    "@ffmpeg/ffmpeg": "^0.12.15",
+    "@ffmpeg/util": "^0.12.2",
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ivantacca/cemento-dither.git"
+  },
+  "keywords": [
+    "ffmpeg",
+    "ffmpeg-wasm",
+    "ascii-art",
+    "dithering",
+    "video-effects"
+  ]
+}
