@@ -4,14 +4,13 @@
   "description": "Dithering, synthetization and ascii art video effects, powered by ffmpeg-wasm",
   "type": "module",
   "license": "MIT",
-  "main": "dist/index.cjs",
+  "main": "dist/index.js",
   "module": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
+      "import": "./dist/index.js"
     }
   },
   "files": [

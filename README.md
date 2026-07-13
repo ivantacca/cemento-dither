@@ -11,6 +11,8 @@ Apps that already use ffmpeg-wasm elsewhere (for trimming, joining, etc.) should
 - If your app already has an `FFmpeg` singleton, just pass it in.
 - If it doesn't yet, use the optional `loadFFmpeg()` helper exported here.
 
+This package is published as ESM only. From a CommonJS file, load it with a dynamic `import()` (`const { templates } = await import('cemento-dither')`) rather than `require()`.
+
 ## Install
 
 ```json
