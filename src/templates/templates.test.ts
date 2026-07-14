@@ -30,7 +30,7 @@ describe('templates', () => {
     })
   })
 
-  it('lowresInvertedAscii exposes fontFamily meta', () => {
-    expect(templates.lowresInvertedAscii.meta).toEqual({ fontWeight: 400, fontFamily: 'Roboto Mono' })
+  it('lowresInvertedAscii no longer hardcodes a font — font is a render-time option now', () => {
+    expect(templates.lowresInvertedAscii.meta).toBeUndefined()
   })
 })
