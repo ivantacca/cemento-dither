@@ -1,6 +1,6 @@
 {
   "name": "cemento-dither",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Dithering, synthetization and ascii art video effects, powered by ffmpeg-wasm",
   "type": "module",
   "license": "MIT",

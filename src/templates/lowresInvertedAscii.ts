@@ -11,6 +11,4 @@ const lowresInvertedAscii: Template = (r, g, b) => {
   return { char, color, background: `rgb(${r},${g},${b})` }
 }
 
-lowresInvertedAscii.meta = { fontWeight: 400, fontFamily: 'Roboto Mono' }
-
 export default lowresInvertedAscii

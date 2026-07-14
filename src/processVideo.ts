@@ -1,6 +1,7 @@
 import { fetchFile } from '@ffmpeg/util'
-import { renderTemplateToContext } from './renderFrame.js'
-import type { ProcessVideoOptions, Template } from './types.js'
+import { renderTemplateToContext, DEFAULT_FONT } from './renderFrame.js'
+import { ensureFontLoaded } from './font.js'
+import type { ProcessVideoOptions, RenderFont, Template } from './types.js'
 
 function getVideoDimensions(file: Blob): Promise<{ width: number; height: number; duration: number }> {
   return new Promise((resolve) => {
@@ -20,7 +21,8 @@ async function renderAsciiFrame(
   resolution: number,
   scale: number,
   width: number,
-  height: number
+  height: number,
+  font: RenderFont
 ): Promise<Uint8Array> {
   const blob = new Blob([frameData.buffer as ArrayBuffer], { type: 'image/png' })
   const bitmap = await createImageBitmap(blob)
@@ -33,7 +35,7 @@ async function renderAsciiFrame(
 
   const outCanvas = new OffscreenCanvas(width * scale, height * scale)
   const ctx = outCanvas.getContext('2d')!
-  renderTemplateToContext(imageData, template, { resolution, scale }, ctx)
+  renderTemplateToContext(imageData, template, { resolution, scale, font }, ctx)
 
   const resultBlob = await outCanvas.convertToBlob({ type: 'image/png' })
   return new Uint8Array(await resultBlob.arrayBuffer())
@@ -51,10 +53,13 @@ export async function processVideo({
   template,
   resolution,
   scale,
+  font = DEFAULT_FONT,
   onPhase,
   onProgress,
 }: ProcessVideoOptions): Promise<Blob> {
   const { width, height, duration } = await getVideoDimensions(file)
+
+  await ensureFontLoaded(font.family, font.weight)
 
   onPhase?.('extracting')
   await ffmpeg.writeFile('input.mp4', await fetchFile(file))
@@ -76,7 +81,7 @@ export async function processVideo({
   onPhase?.('processing')
   for (let i = 0; i < frameFiles.length; i++) {
     const frameData = (await ffmpeg.readFile(frameFiles[i].name)) as Uint8Array
-    const asciiData = await renderAsciiFrame(frameData, template, resolution, scale, width, height)
+    const asciiData = await renderAsciiFrame(frameData, template, resolution, scale, width, height, font)
     await ffmpeg.writeFile(`ascii_${i + 1}.png`, asciiData)
     await ffmpeg.deleteFile(frameFiles[i].name)
     onProgress?.(i + 1, totalFrames)
