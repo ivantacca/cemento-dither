@@ -96,6 +96,37 @@ describe('renderTemplateToSVG', () => {
     expect(svg).toContain('src:url(data:font/woff2;base64,AAEC) format("woff2")')
   })
 
+  it('outlines glyphs via a path provider: one def per distinct glyph, one use per cell', () => {
+    const calls: string[] = []
+    const svg = renderTemplateToSVG(makeImageData(20, 10, [255, 255, 255]), templates.ascii, {
+      resolution: 10,
+      scale: 2,
+      glyphPaths: {
+        getGlyphPath: (char, fontSize) => {
+          calls.push(`${char}@${fontSize}`)
+          return 'M0 0L1 1'
+        },
+      },
+    })
+    // Two white cells, same '@' glyph: provider consulted once, defined once, used twice.
+    expect(calls).toEqual(['@@20'])
+    expect(svg).toContain('<defs><path id="glyph0" d="M0 0L1 1"/></defs>')
+    expect(svg.match(/<use href="#glyph0" /g)).toHaveLength(2)
+    expect(svg).toContain('<use href="#glyph0" x="10" y="10" fill="white"/>')
+    expect(svg).not.toContain('<text')
+    expect(svg).not.toContain('font-family')
+  })
+
+  it('falls back to <text> for glyphs the provider cannot outline', () => {
+    const svg = renderTemplateToSVG(makeImageData(10, 10, [255, 255, 255]), templates.ascii, {
+      resolution: 10,
+      glyphPaths: { getGlyphPath: () => null },
+    })
+    expect(svg).not.toContain('<use')
+    expect(svg).toContain('<text x="5" y="5" fill="white">@</text>')
+    expect(svg).toContain('font-family="Space Mono"')
+  })
+
   it('passes a prebuilt data: URI through verbatim', () => {
     const svg = renderTemplateToSVG(makeImageData(10, 10, [255, 255, 255]), templates.ascii, {
       resolution: 10,

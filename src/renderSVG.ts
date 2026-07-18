@@ -12,6 +12,17 @@ export interface EmbeddedFont {
   data: ArrayBuffer | Uint8Array | string
 }
 
+/** Turns glyphs into vector outlines so the SVG needs no font at all. */
+export interface GlyphPathProvider {
+  /**
+   * Returns SVG path data (`d`) for `char` at `fontSize`, positioned so the glyph is
+   * centered on the origin — advance-width centered horizontally, ink-box centered
+   * vertically, matching how the raster renderer centers glyphs in their cell.
+   * Return null for glyphs the font can't outline; those fall back to `<text>`.
+   */
+  getGlyphPath(char: string, fontSize: number): string | null
+}
+
 export interface RenderTemplateSVGOptions extends RenderTemplateOptions {
   /**
    * When set, an inline `<style>@font-face{...}</style>` with a base64 data URI is emitted
@@ -19,6 +30,13 @@ export interface RenderTemplateSVGOptions extends RenderTemplateOptions {
    * render font, or viewers will fall back to whatever font they have.
    */
   embeddedFont?: EmbeddedFont
+  /**
+   * When set, glyphs are emitted as vector outlines — each distinct glyph once as a
+   * `<defs>` path, placed per cell with `<use>` — instead of `<text>` elements, and no
+   * font is needed to view the file. Takes precedence over `embeddedFont`, which is
+   * then only used for `<text>` fallbacks of glyphs the provider can't outline.
+   */
+  glyphPaths?: GlyphPathProvider
 }
 
 const XML_ESCAPES: Record<string, string> = {
@@ -69,7 +87,7 @@ function fontDataUri(font: EmbeddedFont): string {
 export function renderTemplateToSVG(
   imageData: ImageData,
   template: Template,
-  { resolution, scale = 1, font, embeddedFont }: RenderTemplateSVGOptions
+  { resolution, scale = 1, font, embeddedFont, glyphPaths }: RenderTemplateSVGOptions
 ): string {
   const { width, height, data } = imageData
   const outW = width * scale
@@ -132,15 +150,45 @@ export function renderTemplateToSVG(
     }
   }
 
-  parts.push(
-    `<g font-family="${escapeXML(fontFamily)}" font-size="${fontSize}" font-weight="${fontWeight}" text-anchor="middle" dominant-baseline="central">`
-  )
+  // Each distinct glyph is outlined once in <defs> and stamped per cell with <use>;
+  // glyphs the provider can't outline (and everything, when no provider) use <text>.
+  const defs: string[] = []
+  const glyphIds = new Map<string, string | null>()
+  const uses: string[] = []
+  const texts: string[] = []
   for (const { x, y, pixel } of cells) {
     if (pixel.char.trim() === '' || pixel.color === 'transparent') continue
     const cx = x * scale + cellW / 2
     const cy = y * scale + cellW / 2
-    parts.push(`<text x="${cx}" y="${cy}" fill="${escapeXML(pixel.color)}">${escapeXML(pixel.char)}</text>`)
+
+    let glyphId: string | null = null
+    if (glyphPaths) {
+      const known = glyphIds.get(pixel.char)
+      if (known !== undefined) {
+        glyphId = known
+      } else {
+        const d = glyphPaths.getGlyphPath(pixel.char, fontSize)
+        glyphId = d === null ? null : `glyph${glyphIds.size}`
+        glyphIds.set(pixel.char, glyphId)
+        if (d !== null) defs.push(`<path id="${glyphId}" d="${escapeXML(d)}"/>`)
+      }
+    }
+
+    if (glyphId !== null) {
+      uses.push(`<use href="#${glyphId}" x="${cx}" y="${cy}" fill="${escapeXML(pixel.color)}"/>`)
+    } else {
+      texts.push(`<text x="${cx}" y="${cy}" fill="${escapeXML(pixel.color)}">${escapeXML(pixel.char)}</text>`)
+    }
   }
-  parts.push('</g></svg>')
+
+  if (defs.length > 0) parts.push(`<defs>${defs.join('')}</defs>`, ...uses)
+  if (texts.length > 0) {
+    parts.push(
+      `<g font-family="${escapeXML(fontFamily)}" font-size="${fontSize}" font-weight="${fontWeight}" text-anchor="middle" dominant-baseline="central">`,
+      ...texts,
+      '</g>'
+    )
+  }
+  parts.push('</svg>')
   return parts.join('')
 }
