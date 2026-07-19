@@ -100,7 +100,7 @@ npm run typecheck
 npm test
 ```
 
-`dist/` is gitignored and rebuilt automatically by the `prepare` npm lifecycle script, including when this package is installed as a git dependency (`github:ivantacca/cemento-dither#main`) — you never need to hand-edit or commit `dist/index.d.ts`; it's generated from the TypeScript source on every install/build.
+`dist/` is committed to the repo so that consumers installing this package as a git dependency (`github:ivantacca/cemento-dither#main`) get working compiled output without needing to run a build at install time. **When you change anything under `src/`, run `npm run build` and commit the updated `dist/` in the same commit** — never hand-edit `dist/`. CI fails if the committed `dist/` doesn't match a fresh build.
 
 ## License
 
